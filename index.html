@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEET Focus (Android)</title>
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  background: #000;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+body.focus {
+  background: radial-gradient(circle at center, #0a2a1f 0%, #000 70%);
+}
+
+body.break {
+  background: #5a0000;
+}
+
+#top {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+#topRight {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+  text-align: right;
+}
+
+#timer {
+  font-size: 72px;
+  font-weight: bold;
+}
+
+select, button {
+  margin: 6px;
+  padding: 10px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #444;
+  font-size: 14px;
+}
+
+button:disabled {
+  opacity: 0.4;
+}
+</style>
+</head>
+
+<body class="focus">
+
+<div id="top">
+  NEET: <span id="neet"></span><br>
+  Target: <span id="course"></span>
+</div>
+
+<div id="topRight">
+  Subject: <span id="sub">—</span><br>
+  Today: <span id="today">0</span> h<br>
+  Total: <span id="total">0</span> h
+</div>
+
+<div id="timer">60:00</div>
+
+<div>
+  <select id="subject">
+    <option value="">Choose subject</option>
+    <option>Physics</option>
+    <option>Chemistry</option>
+    <option>Botany</option>
+    <option>Zoology</option>
+  </select><br>
+
+  <select id="mode">
+    <option value="lecture">Lecture</option>
+    <option value="self">Self Study</option>
+  </select><br>
+
+  <button id="start" onclick="start()">Start</button>
+  <button onclick="resetAll()">Reset</button>
+</div>
+
+<script>
+let interval=null, time=3600, mode='focus', focusSec=0;
+let subject=null, study={};
+
+function key(){return new Date().toISOString().slice(0,10);}
+function load(){
+  study=JSON.parse(localStorage.getItem('neet')||'{}');
+}
+function save(){localStorage.setItem('neet',JSON.stringify(study));}
+
+load();
+
+function fmt(s){
+  return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0
