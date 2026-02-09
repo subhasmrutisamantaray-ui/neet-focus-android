@@ -3,109 +3,153 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEET Focus (Android)</title>
-
+<title>NEET Focus</title>
 <style>
-body {
-  margin: 0;
-  height: 100vh;
-  background: #000;
-  color: #fff;
-  font-family: system-ui, sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: black;
+    color: white;
+    height: 100vh;
+  }
+  #top-left, #top-right {
+    position: fixed;
+    top: 10px;
+    font-size: 14px;
+  }
+  #top-left { left: 10px; }
+  #top-right { right: 10px; }
 
-body.focus {
-  background: radial-gradient(circle at center, #0a2a1f 0%, #000 70%);
-}
+  #center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+  }
 
-body.break {
-  background: #5a0000;
-}
+  select, button {
+    padding: 10px;
+    margin: 6px;
+    font-size: 16px;
+  }
 
-#top {
-  position: fixed;
-  top: 8px;
-  left: 8px;
-  font-size: 12px;
-  opacity: 0.9;
-}
+  #timer {
+    font-size: 48px;
+    margin: 20px 0;
+  }
 
-#topRight {
-  position: fixed;
-  top: 8px;
-  right: 8px;
-  font-size: 12px;
-  text-align: right;
-}
-
-#timer {
-  font-size: 72px;
-  font-weight: bold;
-}
-
-select, button {
-  margin: 6px;
-  padding: 10px;
-  background: #111;
-  color: #fff;
-  border: 1px solid #444;
-  font-size: 14px;
-}
-
-button:disabled {
-  opacity: 0.4;
-}
+  .break {
+    background: #7a0000;
+  }
 </style>
 </head>
+<body>
 
-<body class="focus">
+<div id="top-left">NEET in <span id="neet"></span></div>
+<div id="top-right">Today: <span id="today">0</span> h</div>
 
-<div id="top">
-  NEET: <span id="neet"></span><br>
-  Target: <span id="course"></span>
-</div>
-
-<div id="topRight">
-  Subject: <span id="sub">—</span><br>
-  Today: <span id="today">0</span> h<br>
-  Total: <span id="total">0</span> h
-</div>
-
-<div id="timer">60:00</div>
-
-<div>
+<div id="center">
   <select id="subject">
-    <option value="">Choose subject</option>
+    <option value="">Choose Subject</option>
     <option>Physics</option>
     <option>Chemistry</option>
     <option>Botany</option>
     <option>Zoology</option>
-  </select><br>
+  </select>
 
   <select id="mode">
     <option value="lecture">Lecture</option>
     <option value="self">Self Study</option>
-  </select><br>
+  </select>
 
-  <button id="start" onclick="start()">Start</button>
+  <div id="timer">60:00</div>
+
+  <button id="startBtn" onclick="start()">Start</button>
   <button onclick="resetAll()">Reset</button>
 </div>
 
 <script>
-let interval=null, time=3600, mode='focus', focusSec=0;
-let subject=null, study={};
+let focusMin = 60;
+let breakMin = 10;
+let time = focusMin * 60;
+let interval = null;
+let phase = "focus";
+let subject = "";
 
-function key(){return new Date().toISOString().slice(0,10);}
-function load(){
-  study=JSON.parse(localStorage.getItem('neet')||'{}');
+const data = JSON.parse(localStorage.getItem("neet") || "{}");
+
+function todayKey(){
+  return new Date().toISOString().slice(0,10);
 }
-function save(){localStorage.setItem('neet',JSON.stringify(study));}
 
-load();
+if(!data.total) data.total = {};
+if(!data.days) data.days = {};
+if(!data.days[todayKey()]) data.days[todayKey()] = {};
+
+function save(){
+  localStorage.setItem("neet", JSON.stringify(data));
+}
+
+function updateNEET(){
+  const neetDate = new Date("2026-05-03");
+  const now = new Date();
+  const diff = Math.ceil((neetDate - now)/(1000*60*60*24));
+  document.getElementById("neet").textContent = diff + " days";
+}
 
 function fmt(s){
-  return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0
+  return String(Math.floor(s/60)).padStart(2,"0") + ":" +
+         String(s%60).padStart(2,"0");
+}
+
+function start(){
+  subject = document.getElementById("subject").value;
+  if(!subject){ alert("Choose subject"); return; }
+
+  document.getElementById("startBtn").disabled = true;
+
+  interval = setInterval(()=>{
+    time--;
+    document.getElementById("timer").textContent = fmt(time);
+
+    if(time <= 0){
+      clearInterval(interval);
+
+      if(phase === "focus"){
+        if(!data.days[todayKey()][subject])
+          data.days[todayKey()][subject] = 0;
+
+        data.days[todayKey()][subject] += focusMin/60;
+        data.total[subject] = (data.total[subject] || 0) + focusMin/60;
+        save();
+
+        phase = "break";
+        document.body.classList.add("break");
+        time = breakMin * 60;
+      } else {
+        phase = "focus";
+        document.body.classList.remove("break");
+        time = focusMin * 60;
+      }
+      document.getElementById("startBtn").disabled = false;
+      document.getElementById("timer").textContent = fmt(time);
+    }
+  },1000);
+}
+
+function resetAll(){
+  clearInterval(interval);
+  phase = "focus";
+  time = focusMin * 60;
+  document.body.classList.remove("break");
+  document.getElementById("timer").textContent = fmt(time);
+  document.getElementById("startBtn").disabled = false;
+}
+
+updateNEET();
+</script>
+
+</body>
+</html>
