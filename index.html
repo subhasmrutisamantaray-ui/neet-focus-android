@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEET Focus</title>
 <style>
-  body { margin:0; font-family: Arial,sans-serif; height:100vh; background:black; color:white; }
+  body { margin:0; font-family: Arial,sans-serif; height:100vh; background:black; color:white; transition: background 0.3s; }
   #top-left,#top-right { position:fixed; top:10px; font-size:14px; }
   #top-left{left:10px;} #top-right{right:10px;}
   #center {display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center;}
@@ -18,7 +18,12 @@
 <body>
 
 <div id="top-left">NEET in <span id="neet"></span></div>
-<div id="top-right">Today: <span id="today">0</span> h</div>
+<div id="top-right">
+  Mode: <span id="modeLabel">—</span><br>
+  Subject: <span id="subjectLabel">—</span><br>
+  Today: <span id="todayHours">0</span> h<br>
+  Total: <span id="totalHours">0</span> h
+</div>
 
 <div id="center">
   <select id="subject">
@@ -46,9 +51,13 @@
 <div id="lockOverlay">COME BACK TO FOCUS</div>
 
 <script>
-let time=60*60, interval=null, phase="focus", subject="", activeMode="lecture";
+let time=60*60, interval=null, phase="focus", subject="", activeMode="lecture", focusSeconds=0;
 const data = JSON.parse(localStorage.getItem("neet")||"{}");
-if(!data.total) data.total={}; if(!data.days) data.days={}; if(!data.days[new Date().toISOString().slice(0,10)]) data.days[new Date().toISOString().slice(0,10)]={};
+const subjects=["Physics","Chemistry","Botany","Zoology"];
+
+if(!data.total) data.total={}; 
+if(!data.days) data.days={}; 
+if(!data.days[new Date().toISOString().slice(0,10)]) data.days[new Date().toISOString().slice(0,10)]={};
 
 function todayKey(){return new Date().toISOString().slice(0,10);}
 function save(){localStorage.setItem("neet",JSON.stringify(data));}
@@ -57,32 +66,58 @@ function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60)
 
 const lockOverlay=document.getElementById("lockOverlay");
 
+function updateStats(){
+  if(!subject) return;
+  document.getElementById("modeLabel").textContent=activeMode.toUpperCase();
+  document.getElementById("subjectLabel").textContent=subject;
+  const today=data.days[todayKey()][subject]||0;
+  document.getElementById("todayHours").textContent = today;
+  document.getElementById("totalHours").textContent = data.total[subject]||0;
+}
+
 function start(){
   subject=document.getElementById("subject").value;
   activeMode=document.getElementById("mode").value;
   if(!subject){alert("Choose subject"); return;}
+
   document.getElementById("startBtn").disabled=true;
+  document.getElementById("focusMin").disabled=true;
+  document.getElementById("breakMin").disabled=true;
+  document.getElementById("subject").disabled=true;
+  document.getElementById("mode").disabled=true;
 
   let focusMin=parseInt(document.getElementById("focusMin").value)||60;
   let breakMin=parseInt(document.getElementById("breakMin").value)||10;
-  time=focusMin*60;
+  time=(phase==="focus"?focusMin:breakMin)*60;
+  focusSeconds=0;
+  updateStats();
 
   interval=setInterval(()=>{
     time--;
     document.getElementById("timer").textContent=fmt(time);
 
+    if(phase==="focus") focusSeconds++;
+
+    // Only count completed hours (>=1h)
+    if(focusSeconds>=3600){
+      if(!data.days[todayKey()][subject]) data.days[todayKey()][subject]=0;
+      data.days[todayKey()][subject]+=1;
+      data.total[subject]=(data.total[subject]||0)+1;
+      save();
+      focusSeconds-=3600;
+      updateStats();
+    }
+
     if(time<=0){
       clearInterval(interval);
 
-      if(phase==="focus"){
-        if(!data.days[todayKey()][subject]) data.days[todayKey()][subject]=0;
-        data.days[todayKey()][subject]+=focusMin/60;
-        data.total[subject]=(data.total[subject]||0)+focusMin/60;
-        save();
+      let focusMin=parseInt(document.getElementById("focusMin").value)||60;
+      let breakMin=parseInt(document.getElementById("breakMin").value)||10;
 
+      if(phase==="focus"){
         phase="break"; document.body.classList.add("break"); time=breakMin*60;
       }else{
-        phase="focus"; document.body.classList.remove("break"); time=focusMin*60;
+        phase="focus"; document.body.classList.remove("break"); time=focusMin*60; focusSeconds=0;
       }
 
       document.getElementById("startBtn").disabled=false;
@@ -97,6 +132,12 @@ function resetAll(){
   document.body.classList.remove("break");
   document.getElementById("timer").textContent=fmt(time);
   document.getElementById("startBtn").disabled=false;
+
+  document.getElementById("focusMin").disabled=false;
+  document.getElementById("breakMin").disabled=false;
+  document.getElementById("subject").disabled=false;
+  document.getElementById("mode").disabled=false;
+  updateStats();
 }
 
 // SELF-STUDY LOCK
@@ -113,6 +154,7 @@ window.addEventListener("focus", ()=>{
 });
 
 updateNEET();
+updateStats();
 </script>
 
 </body>
