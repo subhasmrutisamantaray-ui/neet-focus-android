@@ -5,17 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEET Focus</title>
 <style>
-  body { margin:0; font-family: Arial,sans-serif; height:100vh; background:black; color:white; transition: background 0.3s; }
+  body { 
+    margin:0; 
+    font-family: Arial,sans-serif; 
+    height:100vh; 
+    background: radial-gradient(circle at center, #0a2a1f 0%, #000 70%); 
+    color:white; 
+    transition: background 0.3s; 
+  }
+
+  body.focus { 
+    animation: ambientPulse 20s ease-in-out infinite; 
+  }
+
+  @keyframes ambientPulse {
+    0% { background: radial-gradient(circle at center, #0a2a1f 0%, #000 70%); }
+    50% { background: radial-gradient(circle at center, #0c3a26 0%, #000 70%); }
+    100% { background: radial-gradient(circle at center, #0a2a1f 0%, #000 70%); }
+  }
+
+  .break { background:#7a0000; }
+
   #top-left,#top-right { position:fixed; top:10px; font-size:14px; }
   #top-left{left:10px;} #top-right{right:10px;}
+  
   #center {display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center;}
   select,input,button {padding:10px; margin:6px; font-size:16px;}
   #timer {font-size:48px; margin:20px 0;}
-  .break {background:#7a0000;}
+  
   #lockOverlay {position:fixed; inset:0; background:rgba(0,0,0,0.95); color:white; font-size:32px; display:flex; align-items:center; justify-content:center; text-align:center; flex-direction:column; z-index:999; display:none;}
 </style>
 </head>
-<body>
+<body class="focus">
 
 <div id="top-left">NEET in <span id="neet"></span></div>
 <div id="top-right">
